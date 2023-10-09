@@ -1,34 +1,25 @@
 const path = require('path'),
-  fs = require('fs'),
-  axios = require('axios');
+  fs = require('fs/promises'),
+  fsSync = require('fs');
 
 ////////////////////////////////
-const VersionsPath = path.resolve(process.env.LOCALAPPDATA,'Roblox','Versions');
-const OofOgg = 'https://cdn.discordapp.com/attachments/1004727597621592084/1005511176186236929/ouch.ogg';
+const VersionsPath = path.resolve(process.env.LOCALAPPDATA ?? process.env.TARGET, 'Roblox', 'Versions');
+const OofOgg = 'https://gh.expo.moe/oof/ouch.ogg';
 const RelativePathToFile = 'content/sounds/ouch.ogg';
 ////////////////////////////////
 
-(async()=>{
-  const versions = fs.readdirSync(VersionsPath)
+(async () => {
+  const versions = await fs.readdir(VersionsPath)
   for (const version of versions) {
     const vPath = path.join(VersionsPath, version)
-    const oggPath = path.join(vPath,RelativePathToFile);
-    if (fs.existsSync(oggPath)) {
-      console.log('Patching for '+version);
-      const writer = fs.createWriteStream(oggPath);
-      console.log('Downloading...');
-      const rs = await axios({
-        responseType: 'stream',
-        method: 'get',
-        url: OofOgg,
-      })
+    const oggPath = path.join(vPath, RelativePathToFile);
+    if (fsSync.existsSync(oggPath)) {
+      console.log('Patching for ' + version + '\nDownloading...');
+      const rs = Buffer.from(await fetch(OofOgg).then(response => response.arrayBuffer()));
       console.log('Writing....');
-      rs.data.pipe(writer)
-      await new Promise((res,rej)=>{
-        writer.on('error', rej)
-        writer.on('finish', res)
-      })
+      await fs.writeFile(oggPath, rs)
       console.log('Done!');
-    }
+    } else
+      console.warn(`Version ${version} does not have ${oggPath}`)
   }
 })()
